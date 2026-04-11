@@ -4,10 +4,6 @@ namespace backend.Application.Common.Interfaces;
 
 public interface IApplicationDbContext
 {
-    // ── Legacy ────────────────────────────────────────────────────────────────
-    DbSet<TodoList> TodoLists { get; }
-    DbSet<TodoItem> TodoItems { get; }
-
     // ── Identity & Tenant ─────────────────────────────────────────────────────
     DbSet<Tenant> Tenants { get; }
     DbSet<User> Users { get; }

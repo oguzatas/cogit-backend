@@ -1,10 +1,11 @@
-﻿# For more info on HTTP files go to https://aka.ms/vs/httpfile
+# For more info on HTTP files go to https://aka.ms/vs/httpfile
 @Web_HostAddress = https://localhost:7219
 
 @Email=administrator@localhost
 @Password=Administrator1!
 @BearerToken=<YourToken>
 
+###
 # POST Users Register
 POST {{Web_HostAddress}}/api/Users/Register
 Content-Type: application/json
@@ -15,7 +16,6 @@ Content-Type: application/json
 }
 
 ###
-
 # POST Users Login
 POST {{Web_HostAddress}}/api/Users/Login
 Content-Type: application/json
@@ -26,7 +26,6 @@ Content-Type: application/json
 }
 
 ###
-
 # POST Users Refresh
 POST {{Web_HostAddress}}/api/Users/Refresh
 Authorization: Bearer {{BearerToken}}
@@ -37,103 +36,26 @@ Content-Type: application/json
 }
 
 ###
-
-# GET WeatherForecast
-GET {{Web_HostAddress}}/api/WeatherForecasts
-Authorization: Bearer {{BearerToken}}
-
-###
-
-# GET TodoLists
-GET {{Web_HostAddress}}/api/TodoLists
-Authorization: Bearer {{BearerToken}}
-
-###
-
-# POST TodoLists
-POST {{Web_HostAddress}}/api/TodoLists
+# POST ScoringScales  [SystemAdmin only]
+POST {{Web_HostAddress}}/api/ScoringScales
 Authorization: Bearer {{BearerToken}}
 Content-Type: application/json
 
-// CreateTodoListCommand
 {
-  "Title": "Backlog"
+  "testId": 1,
+  "name": "Depression Sub-scale",
+  "formulaExpression": "[Q1] + [Q2] + [Q3]"
 }
 
 ###
-
-# PUT TodoLists
-PUT {{Web_HostAddress}}/api/TodoLists/1
+# POST Assignments  [TenantStaff only]
+POST {{Web_HostAddress}}/api/Assignments
 Authorization: Bearer {{BearerToken}}
 Content-Type: application/json
 
-// UpdateTodoListCommand
 {
-  "Id": 1,
-  "Title": "Product Backlog"
+  "testId": 1,
+  "clientId": 5
 }
-
-###
-
-# DELETE TodoLists
-DELETE {{Web_HostAddress}}/api/TodoLists/1
-Authorization: Bearer {{BearerToken}}
-
-###
-
-# GET TodoItems
-@PageNumber = 1
-@PageSize = 10
-GET {{Web_HostAddress}}/api/TodoItems?ListId=1&PageNumber={{PageNumber}}&PageSize={{PageSize}}
-
-Authorization: Bearer {{BearerToken}}
-
-###
-
-# POST TodoItems
-POST {{Web_HostAddress}}/api/TodoItems
-Authorization: Bearer {{BearerToken}}
-Content-Type: application/json
-
-// CreateTodoItemCommand
-{
-  "ListId": 1,
-  "Title": "Eat a burrito 🌯"
-}
-
-###
-
-#PUT TodoItems UpdateItemDetails
-PUT {{Web_HostAddress}}/api/TodoItems/UpdateItemDetails?Id=1
-Authorization: Bearer {{BearerToken}}
-Content-Type: application/json
-
-// UpdateTodoItemDetailCommand
-{
-  "Id": 1,
-  "ListId": 1,
-  "Priority": 3,
-  "Note": "This is a good idea!"
-}
-
-###
-
-# PUT TodoItems
-PUT {{Web_HostAddress}}/api/TodoItems/1
-Authorization: Bearer {{BearerToken}}
-Content-Type: application/json
-
-// UpdateTodoItemCommand
-{
-  "Id": 1,
-  "Title": "Eat a yummy burrito 🌯",
-  "Done": true
-}
-
-###
-
-# DELETE TodoItem
-DELETE {{Web_HostAddress}}/api/TodoItems/1
-Authorization: Bearer {{BearerToken}}
 
 ###

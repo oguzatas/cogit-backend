@@ -18,10 +18,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
         _currentUserService = currentUserService;
     }
 
-    // ── Legacy ────────────────────────────────────────────────────────────────
-    public DbSet<TodoList> TodoLists => Set<TodoList>();
-    public DbSet<TodoItem> TodoItems => Set<TodoItem>();
-
     // ── Identity & Tenant ─────────────────────────────────────────────────────
     public DbSet<Tenant> Tenants => Set<Tenant>();
     // 'new' intentionally hides IdentityDbContext.Users (DbSet<ApplicationUser>).
