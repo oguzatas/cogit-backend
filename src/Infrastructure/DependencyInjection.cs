@@ -44,7 +44,9 @@ public static class DependencyInjection
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddApiEndpoints();
 
+        builder.Services.AddHttpContextAccessor();
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddTransient<IIdentityService, IdentityService>();
+        builder.Services.AddTransient<ICurrentUserService, CurrentUserService>();
     }
 }

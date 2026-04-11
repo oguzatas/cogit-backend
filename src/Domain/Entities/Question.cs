@@ -18,6 +18,11 @@ public class Question : BaseAuditableEntity
     /// </summary>
     public string VariableKey { get; set; } = default!;
 
+    /// <summary>
+    /// Optional per-question display/validation config stored as JSONB in PostgreSQL.
+    /// </summary>
+    public QuestionSettings? Settings { get; set; }
+
     public bool IsDeleted { get; set; }
 
     // Navigation
