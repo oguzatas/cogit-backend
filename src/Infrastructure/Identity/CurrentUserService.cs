@@ -24,4 +24,13 @@ public class CurrentUserService : ICurrentUserService
             return int.TryParse(claim, out var id) ? id : null;
         }
     }
+
+    public int? DomainUserId
+    {
+        get
+        {
+            var claim = _httpContextAccessor.HttpContext?.User?.FindFirstValue("domain_user_id");
+            return int.TryParse(claim, out var id) ? id : null;
+        }
+    }
 }
