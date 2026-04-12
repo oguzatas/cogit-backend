@@ -27,11 +27,30 @@ public static class DependencyInjection
         builder.Services.AddOpenApi(options =>
         {
             options.AddOperationTransformer<ApiExceptionOperationTransformer>();
-            options.AddOperationTransformer<IdentityApiOperationTransformer>();
             options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
         });
 
-        builder.Services.AddCors();
+        // CORS — AllowCredentials() is required for HttpOnly cookies to be sent cross-origin.
+        // Specific origins are mandatory when credentials are involved (wildcard is forbidden).
+        var allowedOrigins = builder.Configuration
+            .GetSection("AllowedOrigins")
+            .Get<string[]>() ?? [];
+
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy("AllowFrontend", policy =>
+            {
+                if (allowedOrigins.Length > 0)
+                    policy.WithOrigins(allowedOrigins);
+                else
+                    policy.AllowAnyOrigin();
+
+                policy
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()
+                    .AllowCredentials();
+            });
+        });
     }
 
     public static void AddKeyVaultIfConfigured(this IHostApplicationBuilder builder)

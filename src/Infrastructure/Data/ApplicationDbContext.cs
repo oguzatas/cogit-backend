@@ -1,6 +1,7 @@
 using System.Reflection;
 using backend.Application.Common.Interfaces;
 using backend.Domain.Entities;
+using backend.Infrastructure.Data.Configurations;
 using backend.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +18,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     {
         _currentUserService = currentUserService;
     }
+
+    // ── Auth (Infrastructure-only — not exposed on IApplicationDbContext) ────
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     // ── Tenant & Identity ─────────────────────────────────────────────────────
     public DbSet<Tenant> Tenants => Set<Tenant>();
@@ -46,6 +50,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     {
         base.OnModelCreating(builder);
         builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+        builder.ApplyConfiguration(new RefreshTokenConfiguration());
 
         ApplyGlobalQueryFilters(builder);
     }

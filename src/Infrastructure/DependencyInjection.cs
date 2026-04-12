@@ -1,12 +1,15 @@
-﻿using backend.Application.Common.Interfaces;
+using System.Text;
+using backend.Application.Common.Interfaces;
 using backend.Infrastructure.Data;
 using backend.Infrastructure.Data.Interceptors;
 using backend.Infrastructure.Identity;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -17,6 +20,7 @@ public static class DependencyInjection
         var connectionString = builder.Configuration.GetConnectionString(Services.Database);
         Guard.Against.Null(connectionString, message: $"Connection string '{Services.Database}' not found.");
 
+        // ── Database ──────────────────────────────────────────────────────────
         builder.Services.AddScoped<ISaveChangesInterceptor, AuditableEntityInterceptor>();
         builder.Services.AddScoped<ISaveChangesInterceptor, DispatchDomainEventsInterceptor>();
 
@@ -29,23 +33,56 @@ public static class DependencyInjection
 
         builder.EnrichNpgsqlDbContext<ApplicationDbContext>();
 
-        builder.Services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
+        builder.Services.AddScoped<IApplicationDbContext>(
+            provider => provider.GetRequiredService<ApplicationDbContext>());
 
         builder.Services.AddScoped<ApplicationDbContextInitialiser>();
 
-        builder.Services.AddAuthentication()
-            .AddBearerToken(IdentityConstants.BearerScheme);
-
-        builder.Services.AddAuthorizationBuilder();
-
+        // ── Identity (user management only — no auth scheme here) ────────────
         builder.Services
             .AddIdentityCore<ApplicationUser>()
             .AddRoles<IdentityRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>()
-            .AddApiEndpoints();
+            .AddDefaultTokenProviders();
 
+        // ── JWT Authentication ────────────────────────────────────────────────
+        var jwtSettings = builder.Configuration
+            .GetSection(JwtSettings.Section)
+            .Get<JwtSettings>()
+            ?? throw new InvalidOperationException(
+                $"'{JwtSettings.Section}' configuration section is missing.");
+
+        builder.Services.Configure<JwtSettings>(
+            builder.Configuration.GetSection(JwtSettings.Section));
+
+        builder.Services
+            .AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme    = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer           = true,
+                    ValidateAudience         = true,
+                    ValidateLifetime         = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer              = jwtSettings.Issuer,
+                    ValidAudience            = jwtSettings.Audience,
+                    IssuerSigningKey         = new SymmetricSecurityKey(
+                                                  Encoding.UTF8.GetBytes(jwtSettings.Secret)),
+                    ClockSkew                = TimeSpan.Zero   // no grace period
+                };
+            });
+
+        builder.Services.AddAuthorizationBuilder();
+
+        // ── Services ──────────────────────────────────────────────────────────
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddSingleton(TimeProvider.System);
+        builder.Services.AddSingleton<IJwtService, JwtService>();
         builder.Services.AddTransient<IIdentityService, IdentityService>();
         builder.Services.AddTransient<ICurrentUserService, CurrentUserService>();
     }

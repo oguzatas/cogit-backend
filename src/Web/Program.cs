@@ -25,10 +25,7 @@ else
 }
 
 app.UseHttpsRedirection();
-app.UseCors(static builder => 
-    builder.AllowAnyMethod()
-        .AllowAnyHeader()
-        .AllowAnyOrigin());
+app.UseCors("AllowFrontend");
 
 app.UseFileServer();
 

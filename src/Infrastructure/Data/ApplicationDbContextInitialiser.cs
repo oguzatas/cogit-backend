@@ -1,7 +1,11 @@
+using System.Security.Claims;
 using backend.Domain.Constants;
+using backend.Domain.Entities;
+using backend.Domain.Enums;
 using backend.Infrastructure.Identity;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -43,11 +47,11 @@ public class ApplicationDbContextInitialiser
     {
         try
         {
-            await _context.Database.EnsureCreatedAsync();
+            await _context.Database.MigrateAsync();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while initialising the database.");
+            _logger.LogError(ex, "An error occurred while running database migrations.");
             throw;
         }
     }
@@ -67,29 +71,62 @@ public class ApplicationDbContextInitialiser
 
     public async Task TrySeedAsync()
     {
-        // Seed the default Identity administrator role.
-        var administratorRole = new IdentityRole(Roles.Administrator);
-
-        if (_roleManager.Roles.All(r => r.Name != administratorRole.Name))
+        // ── 1. Ensure Identity roles exist ────────────────────────────────────
+        foreach (var roleName in new[] { Roles.SuperAdmin, Roles.TenantStaff })
         {
-            await _roleManager.CreateAsync(administratorRole);
+            if (!await _roleManager.RoleExistsAsync(roleName))
+                await _roleManager.CreateAsync(new IdentityRole(roleName));
         }
 
-        // Seed the default Identity administrator user.
-        var administrator = new ApplicationUser
-        {
-            UserName = "administrator@localhost",
-            Email    = "administrator@localhost"
-        };
+        // ── 2. Seed SuperAdmin user ───────────────────────────────────────────
+        const string email    = "oguzhanatas37@gmail.com";
+        const string password = "12345678aA.";
 
-        if (_userManager.Users.All(u => u.UserName != administrator.UserName))
-        {
-            await _userManager.CreateAsync(administrator, "Administrator1!");
+        var identityUser = await _userManager.FindByEmailAsync(email);
 
-            if (!string.IsNullOrWhiteSpace(administratorRole.Name))
+        if (identityUser is null)
+        {
+            identityUser = new ApplicationUser
             {
-                await _userManager.AddToRolesAsync(administrator, [administratorRole.Name]);
+                UserName       = email,
+                Email          = email,
+                EmailConfirmed = true
+            };
+
+            var createResult = await _userManager.CreateAsync(identityUser, password);
+
+            if (!createResult.Succeeded)
+            {
+                var errors = string.Join(", ", createResult.Errors.Select(e => e.Description));
+                _logger.LogError("Failed to create SuperAdmin Identity user: {Errors}", errors);
+                return;
             }
+
+            await _userManager.AddToRoleAsync(identityUser, Roles.SuperAdmin);
+
+            // ── 3. Create matching AppUser domain record ──────────────────────
+            var domainUser = new AppUser
+            {
+                Email        = email,
+                PasswordHash = identityUser.PasswordHash!,
+                Role         = UserRole.SuperAdmin,
+                TenantId     = null,   // SuperAdmin is platform-wide
+                IsDeleted    = false
+            };
+
+            _context.AppUsers.Add(domainUser);
+            await _context.SaveChangesAsync(CancellationToken.None);
+
+            // ── 4. Store domain_user_id as a persistent Identity claim ────────
+            // This claim is included in every JWT so ICurrentUserService.DomainUserId works.
+            await _userManager.AddClaimsAsync(identityUser,
+            [
+                new Claim("domain_user_id", domainUser.Id.ToString()),
+                new Claim("role",           Roles.SuperAdmin)
+            ]);
+
+            _logger.LogInformation("SuperAdmin seeded → Identity: {IdentityId}, Domain: {DomainId}",
+                identityUser.Id, domainUser.Id);
         }
     }
 }
