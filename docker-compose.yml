@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: ik_postgres
+    environment:
+      POSTGRES_DB: backendDb
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - ik_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d backendDb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  ik_postgres_data:

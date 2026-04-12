@@ -18,11 +18,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
         _currentUserService = currentUserService;
     }
 
-    // ── Identity & Tenant ─────────────────────────────────────────────────────
+    // ── Tenant & Identity ─────────────────────────────────────────────────────
     public DbSet<Tenant> Tenants => Set<Tenant>();
-    // 'new' intentionally hides IdentityDbContext.Users (DbSet<ApplicationUser>).
-    // Our domain User entity maps to the "Users" table; Identity maps to "AspNetUsers".
-    public new DbSet<User> Users => Set<User>();
+    public DbSet<Department> Departments => Set<Department>();
+    public DbSet<AppUser> AppUsers => Set<AppUser>();
+    public DbSet<TenantEmployee> TenantEmployees => Set<TenantEmployee>();
+    public DbSet<InviteCode> InviteCodes => Set<InviteCode>();
 
     // ── Test Builder (Global) ─────────────────────────────────────────────────
     public DbSet<Test> Tests => Set<Test>();
@@ -55,7 +56,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     /// Rules:
     ///   - Every entity filters out soft-deleted rows (!IsDeleted).
     ///   - Tenant-scoped entities additionally filter by TenantId when the
-    ///     caller is not a System Admin (TenantId != null).
+    ///     caller is not a SuperAdmin (TenantId != null).
     ///   - Global entities (Test, Question, etc.) only filter by IsDeleted.
     /// </summary>
     private void ApplyGlobalQueryFilters(ModelBuilder builder)
@@ -80,9 +81,26 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
         builder.Entity<Tenant>()
             .HasQueryFilter(e => !e.IsDeleted);
 
+        builder.Entity<Department>()
+            .HasQueryFilter(e => !e.IsDeleted
+                && (_currentUserService.TenantId == null
+                    || e.TenantId == _currentUserService.TenantId));
+
+        // InviteCode: same tenant-scoped filter.
+        // RedeemInviteCode handler uses IgnoreQueryFilters() for anonymous access.
+        builder.Entity<InviteCode>()
+            .HasQueryFilter(e => !e.IsDeleted
+                && (_currentUserService.TenantId == null
+                    || e.TenantId == _currentUserService.TenantId));
+
         // ── Tenant-scoped entities (IsDeleted + TenantId) ─────────────────────
-        // When TenantId is null the caller is a System Admin — bypass tenant filter.
-        builder.Entity<User>()
+        // When TenantId is null the caller is a SuperAdmin — bypass tenant filter.
+        builder.Entity<AppUser>()
+            .HasQueryFilter(e => !e.IsDeleted
+                && (_currentUserService.TenantId == null
+                    || e.TenantId == _currentUserService.TenantId));
+
+        builder.Entity<TenantEmployee>()
             .HasQueryFilter(e => !e.IsDeleted
                 && (_currentUserService.TenantId == null
                     || e.TenantId == _currentUserService.TenantId));

@@ -14,10 +14,9 @@ public class TenantConfiguration : IEntityTypeConfiguration<Tenant>
             .HasMaxLength(200)
             .IsRequired();
 
-        builder.Property(t => t.SubscriptionPlan)
-            .HasConversion<string>()
-            .HasMaxLength(50)
-            .IsRequired();
+        builder.Property(t => t.Description)
+            .HasMaxLength(1000)
+            .IsRequired(false);
 
         // Query filter applied in ApplicationDbContext (IsDeleted only — no TenantId on root).
     }

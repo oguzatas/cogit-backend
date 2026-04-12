@@ -7,17 +7,17 @@ namespace backend.Web.Endpoints;
 
 /// <summary>
 /// Manages global ScoringScales that belong to Tests.
-/// Restricted to SystemAdmin — only platform staff may define scoring logic.
+/// Restricted to SuperAdmin — only platform staff may define scoring logic.
 /// </summary>
 public class ScoringScales : IEndpointGroup
 {
     public static void Map(RouteGroupBuilder groupBuilder)
     {
         // ── Authorization boundary ─────────────────────────────────────────────
-        // Only System Admins may create or manage global scoring scales.
-        // TenantStaff and Clients are forbidden at the group level.
+        // Only SuperAdmins may create or manage global scoring scales.
+        // TenantStaff and TenantEmployees are forbidden at the group level.
         groupBuilder.RequireAuthorization(policy =>
-            policy.RequireRole(nameof(UserRole.SystemAdmin)));
+            policy.RequireRole(nameof(UserRole.SuperAdmin)));
 
         groupBuilder.MapPost(CreateScoringScale);
     }
@@ -27,7 +27,7 @@ public class ScoringScales : IEndpointGroup
         "Creates a new ScoringScale for the specified Test. " +
         "The FormulaExpression must reference valid [VariableKey] tokens that exist " +
         "as Questions on the Test and must be a valid mathematical expression. " +
-        "Restricted to SystemAdmin.")]
+        "Restricted to SuperAdmin.")]
     public static async Task<Results<Created<int>, ValidationProblem>> CreateScoringScale(
         ISender sender,
         CreateScoringScaleCommand command)

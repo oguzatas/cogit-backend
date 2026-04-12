@@ -1,4 +1,4 @@
-using backend.Application.Assignments.Commands.AssignTest;
+using backend.Application.Assignments.Commands.GenerateDepartmentAssignments;
 using backend.Application.Common.Interfaces;
 using backend.Domain.Enums;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -6,63 +6,63 @@ using Microsoft.AspNetCore.Http.HttpResults;
 namespace backend.Web.Endpoints;
 
 /// <summary>
-/// Manages test assignments within a Tenant.
-/// Restricted to TenantStaff — only staff members may assign tests to clients.
+/// Assignment management.
+///
+/// POST /api/Assignments   [TenantStaff | SuperAdmin]
+///   Assigns a Test to every TenantEmployee in a Department.
+///   TenantStaff: TenantId and AssignedByStaffId are sourced from JWT claims.
+///   SuperAdmin:  TenantId must be provided in the request body; AssignedByStaffId is null.
 /// </summary>
 public class Assignments : IEndpointGroup
 {
     public static void Map(RouteGroupBuilder groupBuilder)
     {
-        // ── Authorization boundary ─────────────────────────────────────────────
-        // Only TenantStaff may create assignments.
-        // SystemAdmin and Clients are forbidden at the group level.
-        groupBuilder.RequireAuthorization(policy =>
-            policy.RequireRole(nameof(UserRole.TenantStaff)));
-
-        groupBuilder.MapPost(AssignTest);
+        groupBuilder.MapPost(AssignTestToDepartment)
+            .RequireAuthorization(p =>
+                p.RequireRole(nameof(UserRole.TenantStaff), nameof(UserRole.SuperAdmin)));
     }
 
-    [EndpointSummary("Assign a Test to a Client")]
+    [EndpointSummary("Assign a Test to a Department")]
     [EndpointDescription(
-        "Creates a new Assignment linking a global Test to a Client within the caller's Tenant. " +
-        "TenantId and AssignedByStaffId are sourced exclusively from the caller's JWT claims — " +
-        "they cannot be supplied or overridden via the request body. " +
-        "Restricted to TenantStaff.")]
-    public static async Task<Results<Created<int>, ValidationProblem, ForbidHttpResult>> AssignTest(
+        "Creates one Assignment (with a unique AccessKey magic-link) for every TenantEmployee " +
+        "in the specified Department. Employees who already have an Assignment for this Test " +
+        "are skipped. Returns the count of created and skipped assignments. " +
+        "TenantStaff: TenantId is taken from the JWT claim — omit it from the body. " +
+        "SuperAdmin: TenantId must be provided in the request body.")]
+    public static async Task<Results<Ok<GenerateDepartmentAssignmentsResult>, ForbidHttpResult>> AssignTestToDepartment(
         ISender sender,
         ICurrentUserService currentUserService,
-        AssignTestRequest request)
+        AssignTestToDepartmentRequest request)
     {
-        // ── B2B2C Security Boundary ────────────────────────────────────────────
-        // TenantId and AssignedByStaffId are injected from the validated JWT claims.
-        // A TenantStaff member can NEVER assign a test on behalf of another tenant,
-        // even if they craft a malicious request body.
-        if (currentUserService.TenantId is null || currentUserService.DomainUserId is null)
+        // TenantStaff: both TenantId and DomainUserId come from claims.
+        // SuperAdmin:  no TenantId claim — it must be in the request body.
+        var tenantId = currentUserService.TenantId ?? request.TenantId;
+
+        if (tenantId is null)
             return TypedResults.Forbid();
 
-        var command = new AssignTestCommand
+        var command = new GenerateDepartmentAssignmentsCommand
         {
-            TenantId          = currentUserService.TenantId.Value,
-            AssignedByStaffId = currentUserService.DomainUserId.Value,
+            TenantId          = tenantId.Value,
+            DepartmentId      = request.DepartmentId,
             TestId            = request.TestId,
-            ClientId          = request.ClientId
+            // Populated for TenantStaff; null for SuperAdmin (system-level operation).
+            AssignedByStaffId = currentUserService.DomainUserId
         };
 
-        var id = await sender.Send(command);
-
-        return TypedResults.Created($"/api/Assignments/{id}", id);
+        var result = await sender.Send(command);
+        return TypedResults.Ok(result);
     }
 }
 
 /// <summary>
-/// The subset of assignment data that a TenantStaff member supplies in the request body.
-/// TenantId and AssignedByStaffId are deliberately excluded — they come from JWT claims.
+/// Request body for assigning a Test to a Department.
+/// TenantStaff callers should omit TenantId — it is sourced from the JWT claim.
+/// SuperAdmin callers must provide TenantId.
 /// </summary>
-public record AssignTestRequest
+public record AssignTestToDepartmentRequest
 {
-    /// <summary>The global Test to be assigned.</summary>
+    public int? TenantId { get; init; }
+    public int DepartmentId { get; init; }
     public int TestId { get; init; }
-
-    /// <summary>The domain User (Client role) who will take the test.</summary>
-    public int ClientId { get; init; }
 }

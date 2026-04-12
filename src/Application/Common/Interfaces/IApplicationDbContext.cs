@@ -4,9 +4,12 @@ namespace backend.Application.Common.Interfaces;
 
 public interface IApplicationDbContext
 {
-    // ── Identity & Tenant ─────────────────────────────────────────────────────
+    // ── Tenant & Identity ─────────────────────────────────────────────────────
     DbSet<Tenant> Tenants { get; }
-    DbSet<User> Users { get; }
+    DbSet<Department> Departments { get; }
+    DbSet<AppUser> AppUsers { get; }
+    DbSet<TenantEmployee> TenantEmployees { get; }
+    DbSet<InviteCode> InviteCodes { get; }
 
     // ── Test Builder (Global) ─────────────────────────────────────────────────
     DbSet<Test> Tests { get; }
