@@ -12,12 +12,18 @@ public class GetDepartmentQueryHandler : IRequestHandler<GetDepartmentQuery, Dep
     public GetDepartmentQueryHandler(IApplicationDbContext context)
         => _context = context;
 
-    public async Task<DepartmentDto> Handle(GetDepartmentQuery request, CancellationToken cancellationToken)
+    public async Task<DepartmentDto> Handle(
+        GetDepartmentQuery request, CancellationToken cancellationToken)
     {
         var dept = await _context.Departments
             .AsNoTracking()
             .Where(d => d.Id == request.Id)
-            .Select(d => new DepartmentDto(d.Id, d.TenantId, d.Name, d.Created))
+            .Select(d => new DepartmentDto(
+                d.Id,
+                d.TenantId,
+                d.Name,
+                d.TenantEmployees.Count(e => !e.IsDeleted),
+                d.Created))
             .FirstOrDefaultAsync(cancellationToken);
 
         Guard.Against.NotFound(request.Id, dept);
