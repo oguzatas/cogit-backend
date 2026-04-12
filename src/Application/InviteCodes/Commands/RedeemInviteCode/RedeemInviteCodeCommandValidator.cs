@@ -23,16 +23,13 @@ public class RedeemInviteCodeCommandValidator : AbstractValidator<RedeemInviteCo
             .MaximumLength(320)
             .EmailAddress();
 
-        // Code must exist, not be used, and not be expired.
+        // Code must exist and still be redeemable (not revoked, not expired, not exhausted).
         RuleFor(v => v.Code)
-            .MustAsync(BeAValidCode)
+            .MustAsync(BeRedeemable)
             .When(v => !string.IsNullOrWhiteSpace(v.Code))
-            .WithMessage("The invite code is invalid, has already been used, or has expired.")
-            .WithErrorCode("InviteCode.Invalid");
+            .WithMessage("The invite code is invalid, revoked, expired, or has reached its usage limit.")
+            .WithErrorCode("InviteCode.NotRedeemable");
 
-        // Email + code combination: derive tenantId from code and check uniqueness per-tenant.
-        // Simple guard: email must not already be a TenantEmployee in any tenant (global uniqueness
-        // is intentionally lenient here — the per-tenant unique index on the DB is the hard guard).
         RuleFor(v => v.Email)
             .MustAsync(BeUniqueEmail)
             .When(v => !string.IsNullOrWhiteSpace(v.Email))
@@ -40,15 +37,21 @@ public class RedeemInviteCodeCommandValidator : AbstractValidator<RedeemInviteCo
             .WithErrorCode("InviteCode.DuplicateEmail");
     }
 
-    private async Task<bool> BeAValidCode(string code, CancellationToken ct)
-        => await _context.InviteCodes
+    private async Task<bool> BeRedeemable(string code, CancellationToken ct)
+    {
+        var invite = await _context.InviteCodes
             .IgnoreQueryFilters()
-            .AnyAsync(c =>
-                c.Code == code &&
-                !c.IsDeleted &&
-                !c.IsUsed &&
-                (c.ExpiresAt == null || c.ExpiresAt > DateTimeOffset.UtcNow),
-                ct);
+            .Where(c => c.Code == code && !c.IsDeleted)
+            .Select(c => new { c.IsRevoked, c.ExpiresAt, c.UsageCount, c.MaxUses })
+            .FirstOrDefaultAsync(ct);
+
+        if (invite is null) return false;
+        if (invite.IsRevoked) return false;
+        if (invite.ExpiresAt.HasValue && invite.ExpiresAt < DateTimeOffset.UtcNow) return false;
+        if (invite.MaxUses.HasValue && invite.UsageCount >= invite.MaxUses.Value) return false;
+
+        return true;
+    }
 
     private async Task<bool> BeUniqueEmail(string email, CancellationToken ct)
         => !await _context.TenantEmployees

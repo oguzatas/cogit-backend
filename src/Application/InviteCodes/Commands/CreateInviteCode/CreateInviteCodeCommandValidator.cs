@@ -16,6 +16,11 @@ public class CreateInviteCodeCommandValidator : AbstractValidator<CreateInviteCo
         RuleFor(v => v.DepartmentId)
             .GreaterThan(0);
 
+        RuleFor(v => v.MaxUses)
+            .GreaterThan(0)
+            .When(v => v.MaxUses.HasValue)
+            .WithMessage("MaxUses must be at least 1 when specified.");
+
         RuleFor(v => v.ExpiresAt)
             .GreaterThan(DateTimeOffset.UtcNow)
             .When(v => v.ExpiresAt.HasValue)

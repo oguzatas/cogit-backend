@@ -18,6 +18,9 @@ public class InviteCodeConfiguration : IEntityTypeConfiguration<InviteCode>
         builder.HasIndex(c => c.Code)
             .IsUnique();
 
+        // IsActive is a computed property — not mapped to a column.
+        builder.Ignore(c => c.IsActive);
+
         builder.HasOne(c => c.Tenant)
             .WithMany(t => t.InviteCodes)
             .HasForeignKey(c => c.TenantId)

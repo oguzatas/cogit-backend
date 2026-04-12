@@ -9,11 +9,21 @@ public record CreateInviteCodeCommand : IRequest<CreateInviteCodeResult>
     public int TenantId { get; init; }
     public int DepartmentId { get; init; }
 
-    /// <summary>Optional expiry. NULL = code never expires.</summary>
+    /// <summary>
+    /// Maximum number of redemptions. NULL = unlimited.
+    /// Example: 50 means the first 50 people to redeem the code succeed; further attempts are rejected.
+    /// </summary>
+    public int? MaxUses { get; init; }
+
+    /// <summary>Optional hard expiry. NULL = code never expires on its own.</summary>
     public DateTimeOffset? ExpiresAt { get; init; }
 }
 
-public record CreateInviteCodeResult(int Id, string Code, DateTimeOffset? ExpiresAt);
+public record CreateInviteCodeResult(
+    int Id,
+    string Code,
+    int? MaxUses,
+    DateTimeOffset? ExpiresAt);
 
 public class CreateInviteCodeCommandHandler : IRequestHandler<CreateInviteCodeCommand, CreateInviteCodeResult>
 {
@@ -40,14 +50,16 @@ public class CreateInviteCodeCommandHandler : IRequestHandler<CreateInviteCodeCo
             TenantId     = request.TenantId,
             DepartmentId = request.DepartmentId,
             Code         = code,
-            IsUsed       = false,
+            UsageCount   = 0,
+            MaxUses      = request.MaxUses,
             ExpiresAt    = request.ExpiresAt,
+            IsRevoked    = false,
             IsDeleted    = false
         };
 
         _context.InviteCodes.Add(entity);
         await _context.SaveChangesAsync(cancellationToken);
 
-        return new CreateInviteCodeResult(entity.Id, code, entity.ExpiresAt);
+        return new CreateInviteCodeResult(entity.Id, code, entity.MaxUses, entity.ExpiresAt);
     }
 }

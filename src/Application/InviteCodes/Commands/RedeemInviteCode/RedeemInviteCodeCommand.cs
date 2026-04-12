@@ -5,8 +5,9 @@ namespace backend.Application.InviteCodes.Commands.RedeemInviteCode;
 
 /// <summary>
 /// Flow B — Self-Service Invite.
-/// Public endpoint: the invitee supplies the code + their name and email.
-/// Creates a TenantEmployee under the Department encoded in the invite code.
+/// Public endpoint: the invitee supplies the code, their name, and email.
+/// Creates a TenantEmployee under the Department encoded in the invite code,
+/// then increments UsageCount. Rejects if the code is revoked, expired, or exhausted.
 /// </summary>
 public record RedeemInviteCodeCommand : IRequest<int>
 {
@@ -24,20 +25,21 @@ public class RedeemInviteCodeCommandHandler : IRequestHandler<RedeemInviteCodeCo
 
     public async Task<int> Handle(RedeemInviteCodeCommand request, CancellationToken cancellationToken)
     {
-        // IgnoreQueryFilters: this handler is called by an anonymous user who has no
-        // TenantId claim, so the tenant-scoped global query filter would block the lookup.
+        // IgnoreQueryFilters: anonymous caller has no TenantId claim.
         var invite = await _context.InviteCodes
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(c => c.Code == request.Code && !c.IsDeleted, cancellationToken);
 
         Guard.Against.NotFound(request.Code, invite);
 
-        // Validate the code is still usable.
-        if (invite.IsUsed)
-            throw new InvalidOperationException("This invite code has already been used.");
+        if (invite.IsRevoked)
+            throw new InvalidOperationException("This invite code has been revoked.");
 
         if (invite.ExpiresAt.HasValue && invite.ExpiresAt < DateTimeOffset.UtcNow)
             throw new InvalidOperationException("This invite code has expired.");
+
+        if (invite.MaxUses.HasValue && invite.UsageCount >= invite.MaxUses.Value)
+            throw new InvalidOperationException("This invite code has reached its maximum number of uses.");
 
         var employee = new TenantEmployee
         {
@@ -48,7 +50,7 @@ public class RedeemInviteCodeCommandHandler : IRequestHandler<RedeemInviteCodeCo
             IsDeleted    = false
         };
 
-        invite.IsUsed = true;
+        invite.UsageCount++;
 
         _context.TenantEmployees.Add(employee);
         await _context.SaveChangesAsync(cancellationToken);
