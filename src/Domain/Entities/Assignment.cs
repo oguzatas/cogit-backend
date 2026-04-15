@@ -35,6 +35,6 @@ public class Assignment : BaseAuditableEntity
     public virtual Test Test { get; set; } = default!;
     public virtual TenantEmployee TenantEmployee { get; set; } = default!;
     public virtual AppUser? AssignedByStaff { get; set; }
-    public virtual ICollection<ClientAnswer> ClientAnswers { get; set; } = new List<ClientAnswer>();
+    public virtual ICollection<AssignmentAnswer> AssignmentAnswers { get; set; } = new List<AssignmentAnswer>();
     public virtual ICollection<AssignmentResult> AssignmentResults { get; set; } = new List<AssignmentResult>();
 }

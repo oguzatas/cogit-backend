@@ -23,9 +23,13 @@ public interface IApplicationDbContext
     // ── Distribution ──────────────────────────────────────────────────────────
     DbSet<TenantTestAccess> TenantTestAccesses { get; }
 
+    // ── Scoring Engine (Global) ───────────────────────────────────────────────
+    DbSet<TestVariable> TestVariables { get; }
+    DbSet<QuestionOptionPoint> QuestionOptionPoints { get; }
+
     // ── Execution (Tenant-Scoped) ─────────────────────────────────────────────
     DbSet<Assignment> Assignments { get; }
-    DbSet<ClientAnswer> ClientAnswers { get; }
+    DbSet<AssignmentAnswer> AssignmentAnswers { get; }
     DbSet<AssignmentResult> AssignmentResults { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);

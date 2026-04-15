@@ -35,5 +35,5 @@ public class Question : BaseAuditableEntity
     /// <summary>Rules that point to this question as the next step.</summary>
     public virtual ICollection<BranchingRule> BranchingRulesAsTarget { get; set; } = new List<BranchingRule>();
 
-    public virtual ICollection<ClientAnswer> ClientAnswers { get; set; } = new List<ClientAnswer>();
+    public virtual ICollection<AssignmentAnswer> AssignmentAnswers { get; set; } = new List<AssignmentAnswer>();
 }

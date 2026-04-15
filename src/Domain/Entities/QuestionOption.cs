@@ -20,5 +20,5 @@ public class QuestionOption : BaseAuditableEntity
 
     // Navigation
     public virtual Question Question { get; set; } = default!;
-    public virtual ICollection<ClientAnswer> ClientAnswers { get; set; } = new List<ClientAnswer>();
+    public virtual ICollection<QuestionOptionPoint> QuestionOptionPoints { get; set; } = new List<QuestionOptionPoint>();
 }

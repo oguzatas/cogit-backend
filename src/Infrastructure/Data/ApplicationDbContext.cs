@@ -43,8 +43,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
 
     // ── Execution (Tenant-Scoped) ─────────────────────────────────────────────
     public DbSet<Assignment> Assignments => Set<Assignment>();
-    public DbSet<ClientAnswer> ClientAnswers => Set<ClientAnswer>();
+    public DbSet<AssignmentAnswer> AssignmentAnswers => Set<AssignmentAnswer>();
     public DbSet<AssignmentResult> AssignmentResults => Set<AssignmentResult>();
+
+    // ── Scoring Engine (Global) ───────────────────────────────────────────────
+    public DbSet<TestVariable> TestVariables => Set<TestVariable>();
+    public DbSet<QuestionOptionPoint> QuestionOptionPoints => Set<QuestionOptionPoint>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -80,6 +84,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
             .HasQueryFilter(e => !e.IsDeleted);
 
         builder.Entity<ScoringScale>()
+            .HasQueryFilter(e => !e.IsDeleted);
+
+        builder.Entity<TestVariable>()
+            .HasQueryFilter(e => !e.IsDeleted);
+
+        builder.Entity<QuestionOptionPoint>()
             .HasQueryFilter(e => !e.IsDeleted);
 
         // ── Tenant root (IsDeleted only — no TenantId column on this entity) ──
@@ -120,7 +130,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
                 && (_currentUserService.TenantId == null
                     || e.TenantId == _currentUserService.TenantId));
 
-        builder.Entity<ClientAnswer>()
+        builder.Entity<AssignmentAnswer>()
             .HasQueryFilter(e => !e.IsDeleted
                 && (_currentUserService.TenantId == null
                     || e.TenantId == _currentUserService.TenantId));
