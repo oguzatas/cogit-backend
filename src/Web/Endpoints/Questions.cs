@@ -29,10 +29,13 @@ public class Questions : IEndpointGroup
 
     // ── PUT /api/Questions/{id} ───────────────────────────────────────────────
 
-    [EndpointSummary("Update a Question")]
+    [EndpointSummary("Update a Question (Full Aggregate)")]
     [EndpointDescription(
-        "Updates the core fields of a question (text, type, order, variableKey, settings). " +
-        "Options and OptionPoints are managed via the parent test's questions endpoint.")]
+        "Full aggregate-root replacement: updates the question's scalar fields AND performs " +
+        "a DELETE / UPDATE / ADD merge of its Options and each Option's OptionPoints. " +
+        "Options present in the DB but absent from the request body are hard-deleted (cascade). " +
+        "Options/OptionPoints with a non-zero Id are updated in-place. " +
+        "Options/OptionPoints with no Id (or Id = 0) are inserted as new rows.")]
     public static async Task<NoContent> UpdateQuestion(
         ISender sender, int id, UpdateQuestionCommand command)
     {
