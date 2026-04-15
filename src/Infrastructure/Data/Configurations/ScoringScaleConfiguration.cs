@@ -14,9 +14,22 @@ public class ScoringScaleConfiguration : IEntityTypeConfiguration<ScoringScale>
             .HasMaxLength(300)
             .IsRequired();
 
+        builder.Property(s => s.Key)
+            .HasMaxLength(100)
+            .IsRequired();
+
         builder.Property(s => s.FormulaExpression)
             .HasMaxLength(2000)
             .IsRequired();
+
+        builder.Property(s => s.CalculationOrder)
+            .HasDefaultValue(0)
+            .IsRequired();
+
+        // Unique key per test so cascade references are unambiguous.
+        builder.HasIndex(s => new { s.TestId, s.Key })
+            .IsUnique()
+            .HasFilter("\"IsDeleted\" = false");
 
         builder.HasOne(s => s.Test)
             .WithMany(t => t.ScoringScales)

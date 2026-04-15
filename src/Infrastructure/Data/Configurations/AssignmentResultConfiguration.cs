@@ -10,9 +10,16 @@ public class AssignmentResultConfiguration : IEntityTypeConfiguration<Assignment
     {
         builder.ToTable("AssignmentResults");
 
+        // Nullable — mutually exclusive with ResultText.
+        // Numeric results (double/int/decimal) are stored here.
         builder.Property(r => r.CalculatedScore)
             .HasPrecision(18, 4)
-            .IsRequired();
+            .IsRequired(false);
+
+        // String results (e.g. "ENTJ", "High Risk") are stored here.
+        builder.Property(r => r.ResultText)
+            .HasMaxLength(500)
+            .IsRequired(false);
 
         builder.HasOne(r => r.Assignment)
             .WithMany(a => a.AssignmentResults)

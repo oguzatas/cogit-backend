@@ -22,4 +22,11 @@ public interface ICurrentUserService
     /// NULL until the login flow writes the claim.
     /// </summary>
     int? DomainUserId { get; }
+
+    /// <summary>
+    /// The Assignment this token is scoped to.
+    /// Only populated for guest JWTs issued to TenantEmployees via the AccessKey flow.
+    /// NULL for all staff/admin tokens.
+    /// </summary>
+    int? AssignmentId { get; }
 }

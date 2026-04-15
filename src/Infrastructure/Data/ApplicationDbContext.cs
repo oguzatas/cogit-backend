@@ -45,6 +45,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<Assignment> Assignments => Set<Assignment>();
     public DbSet<AssignmentAnswer> AssignmentAnswers => Set<AssignmentAnswer>();
     public DbSet<AssignmentResult> AssignmentResults => Set<AssignmentResult>();
+    public DbSet<ManualGrade> ManualGrades => Set<ManualGrade>();
 
     // ── Scoring Engine (Global) ───────────────────────────────────────────────
     public DbSet<TestVariable> TestVariables => Set<TestVariable>();
@@ -136,6 +137,11 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
                     || e.TenantId == _currentUserService.TenantId));
 
         builder.Entity<AssignmentResult>()
+            .HasQueryFilter(e => !e.IsDeleted
+                && (_currentUserService.TenantId == null
+                    || e.TenantId == _currentUserService.TenantId));
+
+        builder.Entity<ManualGrade>()
             .HasQueryFilter(e => !e.IsDeleted
                 && (_currentUserService.TenantId == null
                     || e.TenantId == _currentUserService.TenantId));

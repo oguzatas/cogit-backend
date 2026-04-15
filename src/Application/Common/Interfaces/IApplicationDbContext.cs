@@ -31,6 +31,7 @@ public interface IApplicationDbContext
     DbSet<Assignment> Assignments { get; }
     DbSet<AssignmentAnswer> AssignmentAnswers { get; }
     DbSet<AssignmentResult> AssignmentResults { get; }
+    DbSet<ManualGrade> ManualGrades { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

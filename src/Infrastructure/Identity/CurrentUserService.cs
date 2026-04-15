@@ -33,4 +33,13 @@ public class CurrentUserService : ICurrentUserService
             return int.TryParse(claim, out var id) ? id : null;
         }
     }
+
+    public int? AssignmentId
+    {
+        get
+        {
+            var claim = _httpContextAccessor.HttpContext?.User?.FindFirstValue("assignment_id");
+            return int.TryParse(claim, out var id) ? id : null;
+        }
+    }
 }

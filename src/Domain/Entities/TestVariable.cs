@@ -26,4 +26,5 @@ public class TestVariable : BaseAuditableEntity
     // Navigation
     public virtual Test Test { get; set; } = default!;
     public virtual ICollection<QuestionOptionPoint> QuestionOptionPoints { get; set; } = new List<QuestionOptionPoint>();
+    public virtual ICollection<ManualGrade> ManualGrades { get; set; } = new List<ManualGrade>();
 }

@@ -330,7 +330,7 @@ namespace backend.Infrastructure.Data.Migrations
                     b.Property<int>("AssignmentId")
                         .HasColumnType("integer");
 
-                    b.Property<decimal>("CalculatedScore")
+                    b.Property<decimal?>("CalculatedScore")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)");
 
@@ -348,6 +348,10 @@ namespace backend.Infrastructure.Data.Migrations
 
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("text");
+
+                    b.Property<string>("ResultText")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<int>("ScaleId")
                         .HasColumnType("integer");
@@ -510,6 +514,51 @@ namespace backend.Infrastructure.Data.Migrations
                     b.ToTable("InviteCodes", (string)null);
                 });
 
+            modelBuilder.Entity("backend.Domain.Entities.ManualGrade", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AssignmentId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<double>("Points")
+                        .HasColumnType("double precision");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TestVariableId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TestVariableId");
+
+                    b.HasIndex("AssignmentId", "TestVariableId")
+                        .IsUnique();
+
+                    b.ToTable("ManualGrades", (string)null);
+                });
+
             modelBuilder.Entity("backend.Domain.Entities.Question", b =>
                 {
                     b.Property<int>("Id")
@@ -659,6 +708,11 @@ namespace backend.Infrastructure.Data.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("CalculationOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
                     b.Property<DateTimeOffset>("Created")
                         .HasColumnType("timestamp with time zone");
 
@@ -672,6 +726,11 @@ namespace backend.Infrastructure.Data.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("timestamp with time zone");
@@ -689,7 +748,9 @@ namespace backend.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TestId");
+                    b.HasIndex("TestId", "Key")
+                        .IsUnique()
+                        .HasFilter("\"IsDeleted\" = false");
 
                     b.ToTable("ScoringScales", (string)null);
                 });
@@ -1199,6 +1260,25 @@ namespace backend.Infrastructure.Data.Migrations
                     b.Navigation("Tenant");
                 });
 
+            modelBuilder.Entity("backend.Domain.Entities.ManualGrade", b =>
+                {
+                    b.HasOne("backend.Domain.Entities.Assignment", "Assignment")
+                        .WithMany("ManualGrades")
+                        .HasForeignKey("AssignmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("backend.Domain.Entities.TestVariable", "TestVariable")
+                        .WithMany("ManualGrades")
+                        .HasForeignKey("TestVariableId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Assignment");
+
+                    b.Navigation("TestVariable");
+                });
+
             modelBuilder.Entity("backend.Domain.Entities.Question", b =>
                 {
                     b.HasOne("backend.Domain.Entities.Test", "Test")
@@ -1321,6 +1401,8 @@ namespace backend.Infrastructure.Data.Migrations
                     b.Navigation("AssignmentAnswers");
 
                     b.Navigation("AssignmentResults");
+
+                    b.Navigation("ManualGrades");
                 });
 
             modelBuilder.Entity("backend.Domain.Entities.Department", b =>
@@ -1386,6 +1468,8 @@ namespace backend.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("backend.Domain.Entities.TestVariable", b =>
                 {
+                    b.Navigation("ManualGrades");
+
                     b.Navigation("QuestionOptionPoints");
                 });
 #pragma warning restore 612, 618

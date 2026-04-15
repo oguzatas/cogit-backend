@@ -37,4 +37,5 @@ public class Assignment : BaseAuditableEntity
     public virtual AppUser? AssignedByStaff { get; set; }
     public virtual ICollection<AssignmentAnswer> AssignmentAnswers { get; set; } = new List<AssignmentAnswer>();
     public virtual ICollection<AssignmentResult> AssignmentResults { get; set; } = new List<AssignmentResult>();
+    public virtual ICollection<ManualGrade> ManualGrades { get; set; } = new List<ManualGrade>();
 }

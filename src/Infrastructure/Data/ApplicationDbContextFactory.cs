@@ -43,5 +43,6 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
         public string? UserId       => null;
         public int?    TenantId     => null;
         public int?    DomainUserId => null;
+        public int?    AssignmentId => null;
     }
 }

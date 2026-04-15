@@ -13,6 +13,9 @@ public static class DependencyInjection
         // ── Domain Services ───────────────────────────────────────────────────
         builder.Services.AddSingleton<IFormulaValidationService, FormulaValidationService>();
 
+        // Scoped because it depends on IApplicationDbContext (scoped).
+        builder.Services.AddScoped<IScoringEngineService, ScoringEngineService>();
+
         builder.Services.AddAutoMapper(cfg =>
             cfg.AddMaps(Assembly.GetExecutingAssembly()));
 

@@ -52,4 +52,26 @@ public class JwtService : IJwtService
     /// <summary>64 random bytes → 128-char lowercase hex string.</summary>
     public string GenerateRefreshToken()
         => Convert.ToHexString(RandomNumberGenerator.GetBytes(64)).ToLowerInvariant();
+
+    public string GenerateGuestToken(int assignmentId, int tenantId, int expiryMinutes = 60)
+    {
+        var key   = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Secret));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var claims = new[]
+        {
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new Claim("assignment_id",              assignmentId.ToString()),
+            new Claim("tenant_id",                  tenantId.ToString()),
+        };
+
+        var token = new JwtSecurityToken(
+            issuer:             _settings.Issuer,
+            audience:           _settings.Audience,
+            claims:             claims,
+            expires:            DateTime.UtcNow.AddMinutes(expiryMinutes),
+            signingCredentials: creds);
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
 }
