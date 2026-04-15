@@ -24,6 +24,13 @@ public static class DependencyInjection
 
         builder.Services.AddEndpointsApiExplorer();
 
+        // Serialize/deserialize enums as their string names ("MultipleChoice")
+        // rather than integer values. Applied globally to all Minimal API
+        // endpoints — both incoming JSON bodies and outgoing responses.
+        builder.Services.ConfigureHttpJsonOptions(options =>
+            options.SerializerOptions.Converters.Add(
+                new System.Text.Json.Serialization.JsonStringEnumConverter()));
+
         builder.Services.AddOpenApi(options =>
         {
             options.AddOperationTransformer<ApiExceptionOperationTransformer>();
