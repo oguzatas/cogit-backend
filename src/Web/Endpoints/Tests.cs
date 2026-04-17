@@ -5,6 +5,7 @@ using backend.Application.TestVariables.Commands.CreateTestVariable;
 using backend.Application.TestVariables.Queries.GetTestVariables;
 using backend.Application.Tests.Commands.CreateTest;
 using backend.Application.Tests.Commands.DeleteTest;
+using backend.Application.Tests.Commands.SyncTestBlueprint;
 using backend.Application.Tests.Commands.UpdateTest;
 using backend.Application.Tests.Queries.GetTest;
 using backend.Application.Tests.Queries.GetTestMetrics;
@@ -31,6 +32,13 @@ namespace backend.Web.Endpoints;
 /// POST   /api/Tests/{id}/metrics     [SuperAdmin|TenantStaff] — create scoring scale
 /// GET    /api/Tests/{id}/questions   [SuperAdmin|TenantStaff] — list questions (with options+points)
 /// POST   /api/Tests/{id}/questions   [SuperAdmin|TenantStaff] — create question (aggregate root)
+///
+/// ── Blueprint bulk sync ───────────────────────────────────────────────────────
+/// PUT    /api/Tests/{id}/blueprint-sync [SuperAdmin|TenantStaff]
+///        Full 3-way merge of Variables + Metrics + Questions (with Options and
+///        OptionPoints) against the supplied payload, applied atomically in a
+///        single SaveChangesAsync. Intended for bulk edits and AI-driven
+///        blueprint injections.
 /// </summary>
 public class Tests : IEndpointGroup
 {
@@ -76,6 +84,11 @@ public class Tests : IEndpointGroup
                 p.RequireRole(nameof(UserRole.SuperAdmin), nameof(UserRole.TenantStaff)));
 
         groupBuilder.MapPost(CreateQuestion, "{testId}/questions")
+            .RequireAuthorization(p =>
+                p.RequireRole(nameof(UserRole.SuperAdmin), nameof(UserRole.TenantStaff)));
+
+        // ── Blueprint bulk sync ───────────────────────────────────────────────
+        groupBuilder.MapPut(SyncBlueprint, "{testId}/blueprint-sync")
             .RequireAuthorization(p =>
                 p.RequireRole(nameof(UserRole.SuperAdmin), nameof(UserRole.TenantStaff)));
     }
@@ -173,5 +186,24 @@ public class Tests : IEndpointGroup
     {
         var id = await sender.Send(command with { TestId = testId });
         return TypedResults.Created($"/api/Tests/{testId}/questions/{id}", id);
+    }
+
+    // ── Blueprint bulk sync ───────────────────────────────────────────────────
+
+    [EndpointSummary("Sync full Test Blueprint")]
+    [EndpointDescription(
+        "Atomically synchronises the Test's Variables, Metrics (ScoringScales), and Questions " +
+        "(with nested Options and OptionPoints) against the supplied payload. For each collection, " +
+        "rows with a non-zero Id are updated, rows with null/0 Id are inserted, and existing rows " +
+        "absent from the payload are hard-deleted (cascading to their children). All changes are " +
+        "persisted in a single SaveChangesAsync call. " +
+        "Note: OptionPoints can only reference TestVariableIds that already exist in the database — " +
+        "brand-new variables created in the same payload cannot be referenced here (add them in a " +
+        "prior call).")]
+    public static async Task<NoContent> SyncBlueprint(
+        ISender sender, int testId, SyncTestBlueprintCommand command)
+    {
+        await sender.Send(command with { TestId = testId });
+        return TypedResults.NoContent();
     }
 }
