@@ -46,7 +46,11 @@ public class ProblemDetailsExceptionHandler : IExceptionHandler
         if (problemDetails is null) return false;
 
         httpContext.Response.StatusCode = statusCode;
-        await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
+
+        // WriteAsJsonAsync<T> infers T from the declared variable type (ProblemDetails),
+        // which drops all derived-class properties — crucially the Errors dictionary on
+        // ValidationProblemDetails. Passing the runtime type fixes polymorphic serialization.
+        await httpContext.Response.WriteAsJsonAsync(problemDetails, problemDetails.GetType(), cancellationToken);
         return true;
     }
 }
