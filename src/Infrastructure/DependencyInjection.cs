@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
+using Npgsql;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -24,10 +25,23 @@ public static class DependencyInjection
         builder.Services.AddScoped<ISaveChangesInterceptor, AuditableEntityInterceptor>();
         builder.Services.AddScoped<ISaveChangesInterceptor, DispatchDomainEventsInterceptor>();
 
+        // Build the NpgsqlDataSource once with dynamic JSON enabled.
+        // EnableDynamicJson() is required for any JSONB column that maps to a
+        // custom .NET type (e.g. QuestionSettings); without it Npgsql 8+ throws
+        // NotSupportedException at runtime when reading or writing that column.
+        //
+        // Registered as a singleton so that Aspire's EnrichNpgsqlDbContext —
+        // which resolves NpgsqlDataSource from the service provider and passes
+        // it to UseNpgsql — picks up this same configured instance rather than
+        // building a fresh one without EnableDynamicJson.
+        var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
+        dataSourceBuilder.EnableDynamicJson();
+        builder.Services.AddSingleton(dataSourceBuilder.Build());
+
         builder.Services.AddDbContext<ApplicationDbContext>((sp, options) =>
         {
             options.AddInterceptors(sp.GetServices<ISaveChangesInterceptor>());
-            options.UseNpgsql(connectionString);
+            options.UseNpgsql(sp.GetRequiredService<NpgsqlDataSource>());
             options.ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
         });
 

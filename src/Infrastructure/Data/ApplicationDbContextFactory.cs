@@ -2,6 +2,7 @@ using backend.Application.Common.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 
 namespace backend.Infrastructure.Data;
 
@@ -29,8 +30,13 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
 
         var sp = services.BuildServiceProvider();
 
+        // Mirror the runtime configuration: EnableDynamicJson is required for
+        // JSONB columns that map to custom types (e.g. QuestionSettings).
+        var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
+        dataSourceBuilder.EnableDynamicJson();
+
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseNpgsql(connectionString)
+            .UseNpgsql(dataSourceBuilder.Build())
             .Options;
 
         return new ApplicationDbContext(options, sp.GetRequiredService<ICurrentUserService>());

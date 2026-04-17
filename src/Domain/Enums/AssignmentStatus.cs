@@ -1,5 +1,8 @@
+using System.Text.Json.Serialization;
+
 namespace backend.Domain.Enums;
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum AssignmentStatus
 {
     Pending               = 0,
