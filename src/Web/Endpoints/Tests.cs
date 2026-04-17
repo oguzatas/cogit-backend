@@ -36,8 +36,7 @@ namespace backend.Web.Endpoints;
 /// ── Blueprint bulk sync ───────────────────────────────────────────────────────
 /// PUT    /api/Tests/{id}/blueprint-sync [SuperAdmin|TenantStaff]
 ///        Full 3-way merge of Variables + Metrics + Questions (with Options and
-///        OptionPoints) against the supplied payload, applied atomically in a
-///        single SaveChangesAsync. Intended for bulk edits and AI-driven
+///        OptionPoints) against the supplied payload. Intended for bulk edits and AI-driven
 ///        blueprint injections.
 /// </summary>
 public class Tests : IEndpointGroup
@@ -195,11 +194,10 @@ public class Tests : IEndpointGroup
         "Atomically synchronises the Test's Variables, Metrics (ScoringScales), and Questions " +
         "(with nested Options and OptionPoints) against the supplied payload. For each collection, " +
         "rows with a non-zero Id are updated, rows with null/0 Id are inserted, and existing rows " +
-        "absent from the payload are hard-deleted (cascading to their children). All changes are " +
-        "persisted in a single SaveChangesAsync call. " +
-        "Note: OptionPoints can only reference TestVariableIds that already exist in the database — " +
-        "brand-new variables created in the same payload cannot be referenced here (add them in a " +
-        "prior call).")]
+        "absent from the payload are hard-deleted (cascading to their children). Persistence runs " +
+        "in two phases: Variables/Metrics first, then Questions. OptionPoints reference variables " +
+        "by TestVariableKey and the handler resolves each key to the real database ID before " +
+        "question sync.")]
     public static async Task<NoContent> SyncBlueprint(
         ISender sender, int testId, SyncTestBlueprintCommand command)
     {
