@@ -1,5 +1,6 @@
 using backend.Application.Common.Interfaces;
 using backend.Domain.Enums;
+using AppValidationException = backend.Application.Common.Exceptions.ValidationException;
 
 namespace backend.Application.Assignments.Commands.IssueGuestToken;
 
@@ -47,7 +48,14 @@ public class IssueGuestTokenCommandHandler
 
         if (assignment.Status == AssignmentStatus.Completed ||
             assignment.Status == AssignmentStatus.AwaitingManualGrading)
-            throw new InvalidOperationException("This assignment has already been submitted.");
+            throw new AppValidationException([
+                new FluentValidation.Results.ValidationFailure(
+                    nameof(request.AccessKey),
+                    "This assignment has already been completed and cannot be reopened.")
+                {
+                    ErrorCode = "Assignment.AlreadySubmitted"
+                }
+            ]);
 
         var token = _jwtService.GenerateGuestToken(
             assignmentId:  assignment.Id,
