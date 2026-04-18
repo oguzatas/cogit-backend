@@ -33,5 +33,8 @@ public interface IApplicationDbContext
     DbSet<AssignmentResult> AssignmentResults { get; }
     DbSet<ManualGrade> ManualGrades { get; }
 
+    // ── Audit ─────────────────────────────────────────────────────────────────
+    DbSet<AuditLog> AuditLogs { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

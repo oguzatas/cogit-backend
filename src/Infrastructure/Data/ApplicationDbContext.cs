@@ -51,6 +51,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<TestVariable> TestVariables => Set<TestVariable>();
     public DbSet<QuestionOptionPoint> QuestionOptionPoints => Set<QuestionOptionPoint>();
 
+    // ── Audit ─────────────────────────────────────────────────────────────────
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

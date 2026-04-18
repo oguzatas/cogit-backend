@@ -28,6 +28,9 @@ public static class DependencyInjection
             cfg.AddOpenBehavior(typeof(AuthorizationBehaviour<,>));
             cfg.AddOpenBehavior(typeof(ValidationBehaviour<,>));
             cfg.AddOpenBehavior(typeof(PerformanceBehaviour<,>));
+            // AuditBehaviour is registered last (innermost) so it fires immediately
+            // after the handler returns and only on success.
+            cfg.AddOpenBehavior(typeof(AuditBehaviour<,>));
         });
     }
 }
