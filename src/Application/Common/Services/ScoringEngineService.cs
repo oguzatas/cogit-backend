@@ -183,13 +183,19 @@ public sealed class ScoringEngineService : IScoringEngineService
                     scale.Id, scale.Name, assignmentId, scale.FormulaExpression);
 
                 // Graceful degradation: continue scoring remaining scales.
-                // The result row is left with nulls so the reviewer can identify
-                // the failed metric.
+                // Mark the result row with a sentinel text so the frontend can
+                // render a meaningful fallback rather than an empty cell, and so
+                // the reviewer knows which metric needs attention.
+                evalResult    = null;
+                evalSucceeded = false;
             }
 
             // ── Determine result type and build/update the entity ─────────────
             decimal? calculatedScore = null;
-            string?  resultText      = null;
+
+            // Default to null; overwritten below for successful evaluations, or
+            // set to the error sentinel when the formula threw an exception.
+            string? resultText = evalSucceeded ? null : "Evaluation Error";
 
             if (evalSucceeded && evalResult is not null)
             {
