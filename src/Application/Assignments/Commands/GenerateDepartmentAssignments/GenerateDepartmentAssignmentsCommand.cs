@@ -43,15 +43,13 @@ public class GenerateDepartmentAssignmentsCommandHandler
     public async Task<GenerateDepartmentAssignmentsResult> Handle(
         GenerateDepartmentAssignmentsCommand request, CancellationToken cancellationToken)
     {
-        // Guard: Tenant must hold an active access grant for the Test.
-        var access = await _context.TenantTestAccesses
-            .FirstOrDefaultAsync(
-                a => a.TenantId == request.TenantId
-                  && a.TestId   == request.TestId
-                  && a.IsActive,
-                cancellationToken);
+        // Guard: Test must exist and be published.
+        // Access is determined at the Assignment level via a single-use AccessKey magic link —
+        // no global tenant-level access gate applies here.
+        var test = await _context.Tests
+            .FirstOrDefaultAsync(t => t.Id == request.TestId && t.IsPublished, cancellationToken);
 
-        Guard.Against.NotFound(request.TestId, access);
+        Guard.Against.NotFound(request.TestId, test);
 
         // Load all active TenantEmployees in the Department.
         var employees = await _context.TenantEmployees

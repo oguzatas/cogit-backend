@@ -23,13 +23,14 @@ public class GenerateDepartmentAssignmentsCommandValidator
             .WithMessage(v => $"Department {v.DepartmentId} does not belong to Tenant {v.TenantId}.")
             .WithErrorCode("Generate.InvalidDepartment");
 
-        // Tenant must have active access to the Test.
-        RuleFor(v => v)
-            .MustAsync(TenantHasActiveTestAccess)
-            .When(v => v.TenantId > 0 && v.TestId > 0)
-            .WithName("TestId")
-            .WithMessage(v => $"Tenant {v.TenantId} does not have active access to Test {v.TestId}.")
-            .WithErrorCode("Generate.NoTestAccess");
+        // Test must exist and be published.
+        // Access is granted at the Assignment level via a single-use AccessKey magic link —
+        // there is no global tenant-level test access model.
+        RuleFor(v => v.TestId)
+            .MustAsync(TestExistsAndIsPublished)
+            .When(v => v.TestId > 0)
+            .WithMessage(v => $"Test {v.TestId} does not exist or is not yet published.")
+            .WithErrorCode("Generate.TestNotPublished");
     }
 
     private async Task<bool> DepartmentBelongsToTenant(
@@ -37,8 +38,7 @@ public class GenerateDepartmentAssignmentsCommandValidator
         => await _context.Departments
             .AnyAsync(d => d.Id == cmd.DepartmentId && d.TenantId == cmd.TenantId, ct);
 
-    private async Task<bool> TenantHasActiveTestAccess(
-        GenerateDepartmentAssignmentsCommand cmd, CancellationToken ct)
-        => await _context.TenantTestAccesses
-            .AnyAsync(a => a.TenantId == cmd.TenantId && a.TestId == cmd.TestId && a.IsActive, ct);
+    private async Task<bool> TestExistsAndIsPublished(int testId, CancellationToken ct)
+        => await _context.Tests
+            .AnyAsync(t => t.Id == testId && t.IsPublished, ct);
 }

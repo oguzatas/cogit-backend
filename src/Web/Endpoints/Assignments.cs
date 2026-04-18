@@ -5,6 +5,8 @@ using backend.Application.Assignments.Commands.SubmitAssignment;
 using backend.Application.Assignments.Commands.UpsertAssignmentAnswer;
 using backend.Application.Assignments.Queries.GetAssignmentResults;
 using backend.Application.Assignments.Queries.GetAssignmentSession;
+using backend.Application.Assignments.Queries.GetAssignments;
+using backend.Application.Common.Models;
 using backend.Application.Common.Interfaces;
 using backend.Domain.Enums;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -15,6 +17,10 @@ namespace backend.Web.Endpoints;
 /// Assignment management and test-execution flow.
 ///
 /// ── Staff / Admin operations ──────────────────────────────────────────────────
+/// GET  /api/Assignments                       [TenantStaff|SuperAdmin]
+///   Returns a paginated list of assignments with optional filters (Status, TestId,
+///   DepartmentId). Tenant isolation is enforced by the global query filter.
+///
 /// POST /api/Assignments                       [TenantStaff|SuperAdmin]
 ///   Assigns a Test to every TenantEmployee in a Department.
 ///
@@ -44,6 +50,10 @@ public class Assignments : IEndpointGroup
     public static void Map(RouteGroupBuilder groupBuilder)
     {
         // ── Staff / Admin ─────────────────────────────────────────────────────
+        groupBuilder.MapGet(GetAssignments)
+            .RequireAuthorization(p =>
+                p.RequireRole(nameof(UserRole.TenantStaff), nameof(UserRole.SuperAdmin)));
+
         groupBuilder.MapPost(AssignTestToDepartment)
             .RequireAuthorization(p =>
                 p.RequireRole(nameof(UserRole.TenantStaff), nameof(UserRole.SuperAdmin)));
@@ -69,6 +79,36 @@ public class Assignments : IEndpointGroup
 
         groupBuilder.MapPost(SubmitAssignment, "submit")
             .RequireAuthorization();
+    }
+
+    // ── GET /api/Assignments ──────────────────────────────────────────────────
+
+    [EndpointSummary("List Assignments (paginated)")]
+    [EndpointDescription(
+        "Returns a paginated list of assignments ordered newest-first. " +
+        "TenantStaff automatically see only their own tenant's assignments via the global " +
+        "query filter; SuperAdmin sees all tenants. " +
+        "Optional query-string filters: status (Pending|InProgress|Completed|AwaitingManualGrading), " +
+        "testId, departmentId. " +
+        "Pagination: pageNumber (default 1), pageSize (default 10, max 100).")]
+    public static async Task<Ok<PagedResult<AssignmentSummaryDto>>> GetAssignments(
+        ISender sender,
+        int?              pageNumber   = null,
+        int?              pageSize     = null,
+        AssignmentStatus? status       = null,
+        int?              testId       = null,
+        int?              departmentId = null)
+    {
+        var result = await sender.Send(new GetAssignmentsQuery
+        {
+            PageNumber   = pageNumber   ?? 1,
+            PageSize     = pageSize     ?? 10,
+            Status       = status,
+            TestId       = testId,
+            DepartmentId = departmentId
+        });
+
+        return TypedResults.Ok(result);
     }
 
     // ── POST /api/Assignments ─────────────────────────────────────────────────
