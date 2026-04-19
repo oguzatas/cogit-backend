@@ -24,8 +24,6 @@ public class GenerateDepartmentAssignmentsCommandValidator
             .WithErrorCode("Generate.InvalidDepartment");
 
         // Test must exist and be published.
-        // Access is granted at the Assignment level via a single-use AccessKey magic link —
-        // there is no global tenant-level test access model.
         RuleFor(v => v.TestId)
             .MustAsync(TestExistsAndIsPublished)
             .When(v => v.TestId > 0)
@@ -39,6 +37,5 @@ public class GenerateDepartmentAssignmentsCommandValidator
             .AnyAsync(d => d.Id == cmd.DepartmentId && d.TenantId == cmd.TenantId, ct);
 
     private async Task<bool> TestExistsAndIsPublished(int testId, CancellationToken ct)
-        => await _context.Tests
-            .AnyAsync(t => t.Id == testId && t.IsPublished, ct);
+        => await _context.Tests.AnyAsync(t => t.Id == testId && t.IsPublished, ct);
 }

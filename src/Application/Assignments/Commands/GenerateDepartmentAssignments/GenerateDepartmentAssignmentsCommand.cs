@@ -44,8 +44,6 @@ public class GenerateDepartmentAssignmentsCommandHandler
         GenerateDepartmentAssignmentsCommand request, CancellationToken cancellationToken)
     {
         // Guard: Test must exist and be published.
-        // Access is determined at the Assignment level via a single-use AccessKey magic link —
-        // no global tenant-level access gate applies here.
         var test = await _context.Tests
             .FirstOrDefaultAsync(t => t.Id == request.TestId && t.IsPublished, cancellationToken);
 
