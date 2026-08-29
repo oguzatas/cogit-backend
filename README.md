@@ -1,57 +1,83 @@
-﻿# backend
+﻿# Cogit Backend
 
-The project was generated using the [Clean.Architecture.Solution.Template](https://github.com/jasontaylordev/CleanArchitecture) version 10.8.0.
+> **Project status:** archived and open sourced for reference.
 
-## Build
+Cogit Backend is a multi-tenant assessment platform API built with ASP.NET Core and Clean Architecture.  
+It manages tenants, departments, employees, tests, questions, assignments, scoring, and reporting.
 
-Run `dotnet build` to build the solution.
+## What it does
 
-## Run
+- Provides role-based APIs for **SuperAdmin** and **TenantStaff**
+- Supports assignment lifecycle: create assignment, answer questions, submit, and evaluate
+- Includes a guest access flow for test takers via magic-link style access keys
+- Calculates results with formula-based scoring (NCalc) and supports manual grading
+- Exposes audit logs and dashboard metrics for operational visibility
 
-To run the application:
+## Tech stack
+
+- **.NET 10** (SDK `10.0.102`)
+- **ASP.NET Core Minimal APIs**
+- **Entity Framework Core** + **PostgreSQL** (Npgsql)
+- **ASP.NET Core Identity** + **JWT auth** (access + refresh token flow)
+- **MediatR** + **FluentValidation**
+- **.NET Aspire** (AppHost + service defaults + dashboard)
+- **OpenAPI + Scalar** for API exploration
+
+## Solution structure
+
+- `/src/Domain` — core entities, enums, domain rules
+- `/src/Application` — use-cases (commands/queries), validation, business logic
+- `/src/Infrastructure` — persistence, identity, database setup/seeding
+- `/src/Web` — HTTP API endpoints and host configuration
+- `/src/AppHost` — Aspire orchestration entry point
+- `/tests` — unit, integration, and functional test projects
+
+## Getting started
+
+### Prerequisites
+
+- .NET SDK 10.0.102+
+- Docker (for local PostgreSQL)
+
+### 1) Start PostgreSQL
 
 ```bash
-dotnet run --project .\src\AppHost
+docker compose up -d
 ```
 
-The Aspire dashboard will open automatically, showing the application URLs and logs.
+### 2) Run the application
 
-## Code Styles & Formatting
-
-The template includes [EditorConfig](https://editorconfig.org/) support to help maintain consistent coding styles for multiple developers working on the same project across various editors and IDEs. The **.editorconfig** file defines the coding styles applicable to this solution.
-
-## Code Scaffolding
-
-The template includes support to scaffold new commands and queries.
-
-Start in the `.\src\Application\` folder.
-
-Create a new command:
-
-```
-dotnet new ca-usecase --name CreateTodoList --feature-name TodoLists --usecase-type command --return-type int
-```
-
-Create a new query:
-
-```
-dotnet new ca-usecase -n GetTodos -fn TodoLists -ut query -rt TodosVm
-```
-
-If you encounter the error *"No templates or subcommands found matching: 'ca-usecase'."*, install the template and try again:
+Recommended (with Aspire dashboard):
 
 ```bash
-dotnet new install Clean.Architecture.Solution.Template::10.8.0
+dotnet run --project ./src/AppHost
 ```
 
-## Test
+Alternative (API only):
 
-The solution contains unit, integration, and functional tests.
-
-To run the tests:
 ```bash
+dotnet run --project ./src/Web
+```
+
+### 3) Open API docs
+
+- Scalar UI: `http://localhost:<port>/scalar`
+- OpenAPI document: `http://localhost:<port>/openapi/v1.json`
+
+## Build and test
+
+```bash
+dotnet build
 dotnet test
 ```
 
-## Help
-To learn more about the template go to the [project website](https://cleanarchitecture.jasontaylor.dev). Here you can find additional guidance, request new features, report a bug, and discuss the template with other users.
+## Configuration notes
+
+- Database connection and JWT settings are read from `src/Web/appsettings.json`.
+- CORS allowed origins are configured under `AllowedOrigins`.
+- In development, database migrations and seed steps run automatically at startup.
+
+## Security notes for open-source usage
+
+- Replace default local/dev secrets (database password, JWT secret, seeded credentials) before any real deployment.
+- Prefer environment variables or Azure Key Vault for production secrets.
