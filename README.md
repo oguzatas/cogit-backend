@@ -2,7 +2,9 @@
 
 > **Project status:** archived and open sourced for reference.
 
-Cogit Backend is a multi-tenant assessment platform API built with ASP.NET Core and Clean Architecture.  
+client [source code](https://github.com/oguzatas/cogit-admin)
+
+Cogit  is a multi-tenant assessment platform API built with ASP.NET Core and Clean Architecture.  
 It manages tenants, departments, employees, tests, questions, assignments, scoring, and reporting.
 
 ## What it does
